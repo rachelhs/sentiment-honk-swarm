@@ -6,17 +6,19 @@ from nltk.sentiment import SentimentIntensityAnalyzer
 
 # initialize the recognizer
 r = sr.Recognizer()
+#mic = sr.Microphone(device_index=2)
+# for pi use mic as source
 
 def main():
     with sr.Microphone() as source:
         # read the audio data from the default microphone
         print('listening...')
         # records mic audio for 5 seconds
-        audio_data = r.record(source, duration=5)
+        audio_data = r.record(source, duration=10)
         print('converting...')
         # try to convert speech to text
         try:
-            text = r.recognize_google(audio_data)
+            text = r.recognize_google(audio_data, language="en-GB")
             # get sentiment of words
             sentiment_analysis(text)
         # print error if no speech detected
