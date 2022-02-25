@@ -11,45 +11,110 @@ import speech_recognition as sr
 import nltk
 from nltk.sentiment import SentimentIntensityAnalyzer
 
+import RPi.GPIO as GPIO
+import time
+import signal
+
 # initialize the recognizer
 r = sr.Recognizer()
 #mic = sr.Microphone(device_index=2)
 # for pi use mic as source
 
-__author__ = 'slynn'
+# clean up pins before exit
+def onterm(*args):
+    print("clean up pins")
+    GPIO.cleanup()
+    exit()
+
+# if programme is terminated
+signal.signal(signal.SIGTERM, onterm)
+# if programme is aborted
+signal.signal(signal.SIGABRT, onterm)
+# if programme is terminated with ctrl + c
+signal.signal(signal.SIGINT, onterm)
+
+# set which pi pins trigger the relays
+Relay_Ch1 = 5
+Relay_Ch3 = 13
+Relay_Ch5 = 19
+Relay_Ch7 = 21
+
+# set pin numbers for the LEDs
+green_LED_pin = 9
+red_LED_pin = 7
+power_button = 12
+
+GPIO.setwarnings(False)
+GPIO.setmode(GPIO.BCM)
+
+# set relay pins as output and set them to off - high signal is off
+GPIO.setup(Relay_Ch1,GPIO.OUT)
+GPIO.setup(Relay_Ch3,GPIO.OUT)
+GPIO.setup(Relay_Ch5,GPIO.OUT)
+GPIO.setup(Relay_Ch7,GPIO.OUT)
+GPIO.output(Relay_Ch1,GPIO.HIGH)
+GPIO.output(Relay_Ch3,GPIO.HIGH)
+GPIO.output(Relay_Ch5,GPIO.HIGH)
+GPIO.output(Relay_Ch7,GPIO.HIGH)
+
+# set LED pins as output and initialise as off
+GPIO.setup(green_LED_pin, GPIO.OUT, initial=GPIO.LOW)
+GPIO.setup(red_LED_pin, GPIO.OUT, initial=GPIO.LOW)
+
+# set power button pin as input so can determine when pressed and initialise to 3.3v
+GPIO.setup(power_button, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 app.config['DEBUG'] = True
 
-#turn the flask app into a socketio app
+# turn the flask app into a socketio app
 socketio = SocketIO(app, async_mode=None, logger=True, engineio_logger=True)
 
-#random number Generator Thread
+# speech detection Thread
 thread = Thread()
 thread_stop_event = Event()
 
-def randomNumberGenerator():
+# turn green LED on to show programme is running
+GPIO.output(green_LED_pin, GPIO.HIGH)
+
+def Shutdown(gpio_pin):
+    print("shutdown function")
+    # os.system("sudo shutdown -h now")
+    # make sure it is the button being pressed which has triggered the function
+    if GPIO.input(power_button) == GPIO.LOW:
+        print("button pressed")
+
+
+# Shutdown function executes when power button is pressed
+GPIO.add_event_detect(power_button, GPIO.FALLING, callback=Shutdown, bouncetime=2000)
+
+def speechToText():
     #infinite loop of magical random numbers
     print("Making random numbers")
     while not thread_stop_event.isSet():
         with sr.Microphone() as source:
             # read the audio data from the default microphone
             print('listening...')
-            # records mic audio for 5 seconds
+            # turn the 'listening' light on
+            GPIO.output(red_LED_pin, GPIO.HIGH)
+            # records mic audio for 8 seconds
             audio_data = r.record(source, duration=8)
+            # turn the 'listening' light off
+            GPIO.output(red_LED_pin, GPIO.LOW)
             print('converting...')
             # try to convert speech to text
             try:
                 text = r.recognize_google(audio_data, language="en-GB")
-                socketio.emit('newnumber', {'number': text}, namespace='/test')
+                socketio.emit('newspeech', {'speech': text}, namespace='/test')
                 socketio.sleep(1)
                 # get sentiment of words
                 sentiment_analysis(text)
             # print error if no speech detected
             except sr.UnknownValueError as e:
                 print('speech not recognised', str(e))
-                socketio.emit('newnumber', {'number': 'speech not recognised'}, namespace='/test')
+                socketio.emit('newspeech', {'speech': 'speech not recognised'}, namespace='/test')
+                socketio.emit('newscore', {'score': 0}, namespace='/test')
                 socketio.sleep(1)
 
 def sentiment_analysis(text):
@@ -63,6 +128,27 @@ def sentiment_analysis(text):
     print(negativity_score)
     socketio.emit('newscore', {'score': negativity_score}, namespace='/test')
     socketio.sleep(1)
+    # if the text is negative trigger the horns
+    if negativity_score > 0:
+        trigger_horns()
+
+def trigger_horns():
+    print("NEGATIVE")
+    # turn horns on
+    GPIO.output(Relay_Ch1,GPIO.LOW)
+    GPIO.output(Relay_Ch3,GPIO.LOW)
+    GPIO.output(Relay_Ch5,GPIO.LOW)
+    GPIO.output(Relay_Ch7,GPIO.LOW)
+    # wait for 1 second
+    time.sleep(1)
+    # turn horns off
+    GPIO.output(Relay_Ch1,GPIO.HIGH)
+    GPIO.output(Relay_Ch3,GPIO.HIGH)
+    GPIO.output(Relay_Ch5,GPIO.HIGH)
+    GPIO.output(Relay_Ch7,GPIO.HIGH)
+    # little pause before the next round
+    time.sleep(1)
+
 
 @app.route('/')
 def index():
@@ -78,7 +164,7 @@ def test_connect():
     #Start the random number generator thread only if the thread has not been started before.
     if not thread.isAlive():
         print("Starting Thread")
-        thread = socketio.start_background_task(randomNumberGenerator)
+        thread = socketio.start_background_task(speechToText)
 
 @socketio.on('disconnect', namespace='/test')
 def test_disconnect():
