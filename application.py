@@ -1,7 +1,7 @@
 # Start with a basic flask app webpage.
 from flask_socketio import SocketIO, emit
 from flask import Flask, render_template, url_for, copy_current_request_context
-from random import random
+from random import random, sample
 from time import sleep
 from threading import Thread, Event
 
@@ -136,8 +136,9 @@ def trigger_horns(negativity_score):
     print("NEGATIVE")
     horns = [Relay_Ch1, Relay_Ch3, Relay_Ch5, Relay_Ch7]
     # activate one horn
-    if (negativity_score) < 25:
-        random_horn = random.sample(horns, 1)
+    if (negativity_score) <= 25:
+        print("neg 1")
+        random_horn = sample(horns, 1)
         # turn horn on
         GPIO.output(random_horn,GPIO.LOW)
         # wait for 1 second
@@ -145,8 +146,10 @@ def trigger_horns(negativity_score):
         # turn horn off
         GPIO.output(random_horn,GPIO.HIGH)
     # activate two horns    
-    elif (negativity_score) < 50:
-        random_horns = random.sample(horns, 2)
+    elif (negativity_score) <= 50:
+        print("neg 2")
+        random_horns = sample(horns, 2)
+        print(random_horns)
         # turn horns on
         for horn in random_horns:
             GPIO.output(horn,GPIO.LOW)
@@ -156,8 +159,10 @@ def trigger_horns(negativity_score):
         for horn in random_horns:
             GPIO.output(horn,GPIO.HIGH)
     # activate three horns    
-    elif (negativity_score) < 75:
-        random_horns = random.sample(horns, 3)
+    elif (negativity_score) <= 75:
+        print("neg 3")
+        random_horns = sample(horns, 3)
+        print(random_horns)
         # turn horns on
         for horn in random_horns:
             GPIO.output(horn,GPIO.LOW)
@@ -167,7 +172,8 @@ def trigger_horns(negativity_score):
         for horn in random_horns:
             GPIO.output(horn,GPIO.HIGH)
     # activate all four horns    
-    elif (negativity_score) < 90:
+    elif (negativity_score) <= 100:
+        print("neg 4")
         # turn horns on
         for horn in horns:
             GPIO.output(horn,GPIO.LOW)
