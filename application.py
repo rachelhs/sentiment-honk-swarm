@@ -130,25 +130,54 @@ def sentiment_analysis(text):
     socketio.sleep(1)
     # if the text is negative trigger the horns
     if negativity_score > 0:
-        trigger_horns()
+        trigger_horns(negativity_score)
 
-def trigger_horns():
+def trigger_horns(negativity_score):
     print("NEGATIVE")
-    # turn horns on
-    GPIO.output(Relay_Ch1,GPIO.LOW)
-    GPIO.output(Relay_Ch3,GPIO.LOW)
-    GPIO.output(Relay_Ch5,GPIO.LOW)
-    GPIO.output(Relay_Ch7,GPIO.LOW)
-    # wait for 1 second
-    time.sleep(1)
-    # turn horns off
-    GPIO.output(Relay_Ch1,GPIO.HIGH)
-    GPIO.output(Relay_Ch3,GPIO.HIGH)
-    GPIO.output(Relay_Ch5,GPIO.HIGH)
-    GPIO.output(Relay_Ch7,GPIO.HIGH)
+    horns = [Relay_Ch1, Relay_Ch3, Relay_Ch5, Relay_Ch7]
+    # activate one horn
+    if (negativity_score) < 25:
+        random_horn = random.sample(horns, 1)
+        # turn horn on
+        GPIO.output(random_horn,GPIO.LOW)
+        # wait for 1 second
+        time.sleep(1)
+        # turn horn off
+        GPIO.output(random_horn,GPIO.HIGH)
+    # activate two horns    
+    elif (negativity_score) < 50:
+        random_horns = random.sample(horns, 2)
+        # turn horns on
+        for horn in random_horns:
+            GPIO.output(horn,GPIO.LOW)
+        # wait for 1 second
+        time.sleep(1)
+        # turn horn off
+        for horn in random_horns:
+            GPIO.output(horn,GPIO.HIGH)
+    # activate three horns    
+    elif (negativity_score) < 75:
+        random_horns = random.sample(horns, 3)
+        # turn horns on
+        for horn in random_horns:
+            GPIO.output(horn,GPIO.LOW)
+        # wait for 1 second
+        time.sleep(1)
+        # turn horn off
+        for horn in random_horns:
+            GPIO.output(horn,GPIO.HIGH)
+    # activate all four horns    
+    elif (negativity_score) < 90:
+        # turn horns on
+        for horn in horns:
+            GPIO.output(horn,GPIO.LOW)
+        # wait for 1 second
+        time.sleep(1)
+        # turn horn off
+        for horn in horns:
+            GPIO.output(horn,GPIO.HIGH)
     # little pause before the next round
     time.sleep(1)
-
 
 @app.route('/')
 def index():
