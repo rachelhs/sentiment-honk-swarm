@@ -14,6 +14,8 @@ from nltk.sentiment import SentimentIntensityAnalyzer
 import RPi.GPIO as GPIO
 import time
 import signal
+import sys
+import os
 
 # initialize the recognizer
 r = sr.Recognizer()
@@ -40,8 +42,8 @@ Relay_Ch5 = 19
 Relay_Ch7 = 21
 
 # set pin numbers for the LEDs
-green_LED_pin = 9
-red_LED_pin = 7
+yellow_LED_pin = 7
+red_LED_pin = 9
 power_button = 12
 
 GPIO.setwarnings(False)
@@ -58,7 +60,7 @@ GPIO.output(Relay_Ch5,GPIO.HIGH)
 GPIO.output(Relay_Ch7,GPIO.HIGH)
 
 # set LED pins as output and initialise as off
-GPIO.setup(green_LED_pin, GPIO.OUT, initial=GPIO.LOW)
+GPIO.setup(yellow_LED_pin, GPIO.OUT, initial=GPIO.LOW)
 GPIO.setup(red_LED_pin, GPIO.OUT, initial=GPIO.LOW)
 
 # set power button pin as input so can determine when pressed and initialise to 3.3v
@@ -76,7 +78,7 @@ thread = Thread()
 thread_stop_event = Event()
 
 # turn green LED on to show programme is running
-GPIO.output(green_LED_pin, GPIO.HIGH)
+GPIO.output(yellow_LED_pin, GPIO.HIGH)
 
 def Shutdown(gpio_pin):
     print("shutdown function")
@@ -84,6 +86,10 @@ def Shutdown(gpio_pin):
     # make sure it is the button being pressed which has triggered the function
     if GPIO.input(power_button) == GPIO.LOW:
         print("button pressed")
+        print("clean up pins")
+        GPIO.cleanup()
+        print("SHUTTING DOWN", file=sys.stderr)
+        os.system("sudo shutdown -h now")
 
 
 # Shutdown function executes when power button is pressed
