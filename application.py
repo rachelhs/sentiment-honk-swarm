@@ -95,6 +95,9 @@ def Shutdown(gpio_pin):
 # Shutdown function executes when power button is pressed
 GPIO.add_event_detect(power_button, GPIO.FALLING, callback=Shutdown, bouncetime=2000)
 
+# change to alter number of seconds that microphone is recording for
+listening_seconds = 5
+
 def speechToText():
     #infinite loop of magical random numbers
     print("Making random numbers")
@@ -104,8 +107,8 @@ def speechToText():
             print('listening...')
             # turn the 'listening' light on
             GPIO.output(red_LED_pin, GPIO.HIGH)
-            # records mic audio for 8 seconds
-            audio_data = r.record(source, duration=8)
+            # records mic audio for chosen number of seconds
+            audio_data = r.record(source, duration=listening_seconds)
             # turn the 'listening' light off
             GPIO.output(red_LED_pin, GPIO.LOW)
             print('converting...')
@@ -138,6 +141,9 @@ def sentiment_analysis(text):
     if negativity_score > 0:
         trigger_horns(negativity_score)
 
+# amount of time horns are blowing for
+honk_time = 1.5
+
 def trigger_horns(negativity_score):
     print("NEGATIVE")
     horns = [Relay_Ch1, Relay_Ch3, Relay_Ch5, Relay_Ch7]
@@ -147,8 +153,8 @@ def trigger_horns(negativity_score):
         random_horn = sample(horns, 1)
         # turn horn on
         GPIO.output(random_horn,GPIO.LOW)
-        # wait for 1 second
-        time.sleep(1)
+        # wait for x seconds
+        time.sleep(honk_time)
         # turn horn off
         GPIO.output(random_horn,GPIO.HIGH)
     # activate two horns    
@@ -159,8 +165,8 @@ def trigger_horns(negativity_score):
         # turn horns on
         for horn in random_horns:
             GPIO.output(horn,GPIO.LOW)
-        # wait for 1 second
-        time.sleep(1)
+        # wait for x seconds
+        time.sleep(honk_time)
         # turn horn off
         for horn in random_horns:
             GPIO.output(horn,GPIO.HIGH)
@@ -172,8 +178,8 @@ def trigger_horns(negativity_score):
         # turn horns on
         for horn in random_horns:
             GPIO.output(horn,GPIO.LOW)
-        # wait for 1 second
-        time.sleep(1)
+        # wait for x seconds
+        time.sleep(honk_time)
         # turn horn off
         for horn in random_horns:
             GPIO.output(horn,GPIO.HIGH)
@@ -183,13 +189,13 @@ def trigger_horns(negativity_score):
         # turn horns on
         for horn in horns:
             GPIO.output(horn,GPIO.LOW)
-        # wait for 1 second
-        time.sleep(1)
+        # wait for x seconds
+        time.sleep(honk_time)
         # turn horn off
         for horn in horns:
             GPIO.output(horn,GPIO.HIGH)
     # little pause before the next round
-    time.sleep(1)
+    time.sleep(4)
 
 @app.route('/')
 def index():
